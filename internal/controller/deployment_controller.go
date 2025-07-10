@@ -1,7 +1,3 @@
-// Will watch for Deployments and create a Vertical Pod Autoscaler (VPA) for each Deployment in update mode off.
-// If a Deployment is deleted, it will also delete the associated VPA to clean up.
-// This controller is designed to work with the Kubernetes Vertical Pod Autoscaler API.
-// It assumes that the Vertical Pod Autoscaler API is installed in the cluster.
 package controller
 
 import (
