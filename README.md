@@ -7,10 +7,13 @@ This is just a controller not an operator, there are no defined custom CRD's
 ## Description
 
 Will watch for Deployments and Jobs and create a Vertical Pod Autoscaler (VPA) for each resource in update mode off.
-VPA are default deployed as update mode off, to be used to gain insights on right sizing CPU/Mem requests.
+
+VPA's are deployed as update mode off, to be used to gain insights on right sizing CPU/Mem requests for workloads.
 
 If a resources is deleted, it will also delete the associated VPA to clean up.
+
 This controller is designed to work with the Kubernetes Vertical Pod Autoscaler API.
+
 It assumes that the Vertical Pod Autoscaler API is installed in the cluster.
 
 ## Getting Started
@@ -120,7 +123,6 @@ previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml
 is manually re-applied afterwards.
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
 **NOTE:** Run `make help` for more information on all potential `make` targets
 
