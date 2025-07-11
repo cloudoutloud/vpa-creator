@@ -16,6 +16,16 @@ This controller is designed to work with the Kubernetes Vertical Pod Autoscaler 
 
 It assumes that the Vertical Pod Autoscaler API is installed in the cluster.
 
+## What problem can this solve?
+
+Right sizing workloads can be a difficult tasks, often developers and DevOps teams don't know what to set for an application.
+
+As a result of this workload request and limits are often set at the start of the app lifecycle and never re-reviewed by service owners/teams. This requests and limits are often over provisioned and set based on simple assumption.
+
+Over time this can lead to inaccurate settings, by configuring VPA in dry mode for each resource we can track the recommend actual usage and adjust request and limits accordingly.
+
+This in turn could reduce overall compute cost of a cluster.
+
 ## Getting Started
 
 ### Prerequisites
@@ -35,11 +45,6 @@ make docker-build docker-push IMG=<some-registry>/vpa-creator:tag
 And it is required to have access to pull the image from the working environment.
 Make sure you have the proper permission to the registry if the above commands don’t work.
 
-**Install the CRDs into the cluster:**
-
-```sh
-make install
-```
 
 **Deploy the Manager to the cluster with the image specified by `IMG`:**
 
@@ -58,19 +63,6 @@ kubectl apply -k config/samples/
 ```
 
 >**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
 
 **UnDeploy the controller from the cluster:**
 
