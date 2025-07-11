@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/autoscaling/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,19 +15,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type DeploymentReconciler struct {
+type JobReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *JobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var deploy appsv1.Deployment
-	err := r.Get(ctx, req.NamespacedName, &deploy)
+	var job batchv1.Job
+	err := r.Get(ctx, req.NamespacedName, &job)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Deployment was deleted — clean up orphaned VPA
+			// Job was deleted — clean up orphaned VPA
 			vpaName := fmt.Sprintf("%s-vpa", req.Name)
 			var vpa vpav1.VerticalPodAutoscaler
 			err := r.Get(ctx, client.ObjectKey{Name: vpaName, Namespace: req.Namespace}, &vpa)
@@ -45,11 +45,11 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	vpaName := fmt.Sprintf("%s-vpa", deploy.Name)
+	vpaName := fmt.Sprintf("%s-vpa", job.Name)
 
 	// Check if VPA already exists
 	var existingVPA vpav1.VerticalPodAutoscaler
-	err = r.Get(ctx, client.ObjectKey{Name: vpaName, Namespace: deploy.Namespace}, &existingVPA)
+	err = r.Get(ctx, client.ObjectKey{Name: vpaName, Namespace: job.Namespace}, &existingVPA)
 	if err == nil {
 		// VPA exists
 		return ctrl.Result{}, nil
@@ -61,13 +61,13 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	vpa := &vpav1.VerticalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      vpaName,
-			Namespace: deploy.Namespace,
+			Namespace: job.Namespace,
 		},
 		Spec: vpav1.VerticalPodAutoscalerSpec{
 			TargetRef: &v1.CrossVersionObjectReference{
-				Kind:       "Deployment",
-				Name:       deploy.Name,
-				APIVersion: "apps/v1",
+				Kind:       "Job",
+				Name:       job.Name,
+				APIVersion: "batch/v1",
 			},
 			UpdatePolicy: &vpav1.PodUpdatePolicy{
 				UpdateMode: func() *vpav1.UpdateMode {
@@ -87,8 +87,8 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *JobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&appsv1.Deployment{}).
+		For(&batchv1.Job{}).
 		Complete(r)
 }
