@@ -85,5 +85,6 @@ func (r *JobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 func (r *JobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&batchv1.Job{}).
+		Owns(&vpav1.VerticalPodAutoscaler{}).
 		Complete(r)
 }
