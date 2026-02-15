@@ -12,6 +12,7 @@ import (
 	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -27,19 +28,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	err := r.Get(ctx, req.NamespacedName, &deploy)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Deployment was deleted — clean up orphaned VPA
-			vpaName := fmt.Sprintf("%s-vpa", req.Name)
-			var vpa vpav1.VerticalPodAutoscaler
-			err := r.Get(ctx, client.ObjectKey{Name: vpaName, Namespace: req.Namespace}, &vpa)
-			if err == nil {
-				if delErr := r.Delete(ctx, &vpa); delErr != nil {
-					l.Error(delErr, "Failed to delete VPA after Deployment deletion")
-					return ctrl.Result{}, delErr
-				}
-				l.Info("Deleted VPA because Deployment was deleted", "VPA", vpaName)
-			} else if !errors.IsNotFound(err) {
-				return ctrl.Result{}, err
-			}
+			// Deployment was deleted — VPA will be automatically garbage collected by Kubernetes
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
@@ -78,6 +67,12 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		},
 	}
 
+	// Set the Deployment as the owner of the VPA for automatic garbage collection
+	if err := controllerutil.SetControllerReference(&deploy, vpa, r.Scheme); err != nil {
+		l.Error(err, "Failed to set controller reference")
+		return ctrl.Result{}, err
+	}
+
 	if err := r.Create(ctx, vpa); err != nil {
 		l.Error(err, "Failed to create VPA")
 		return ctrl.Result{}, err
@@ -90,5 +85,6 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1.Deployment{}).
+		Owns(&vpav1.VerticalPodAutoscaler{}).
 		Complete(r)
 }

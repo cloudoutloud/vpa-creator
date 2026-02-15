@@ -10,11 +10,11 @@ Will watch for Deployments and Jobs and create a Vertical Pod Autoscaler (VPA) f
 
 VPA's are deployed as update mode off, to be used to gain insights on right sizing CPU/Mem requests for workloads.
 
-If a resources is deleted, it will also delete the associated VPA to clean up.
+When a resource is garbage collected, the controller automatically removes the associated VPA through Kubernetes' garbage collection mechanism.
 
 This controller is designed to work with the Kubernetes Vertical Pod Autoscaler API.
 
-It assumes that the Vertical Pod Autoscaler API is installed in the cluster.
+It assumes that the Vertical Pod Autoscaler API is installed in the cluster. You would need metric server and VPA CRD's installed.
 
 ## What problem can this solve?
 
